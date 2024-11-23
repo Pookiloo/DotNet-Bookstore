@@ -20,3 +20,45 @@ html {
 body {
   margin-bottom: 60px;
 }
+
+#book-img {
+    max-height:8rem;
+}
+
+/* Sortable tables */
+table.sortable thead {
+    background-color: #eee;
+    color: #666666;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+table.sortable th.img-table {
+    cursor: default;
+}
+
+table.sortable th:hover {
+    color: blue;
+}
+
+table.sortable th:nth-of-type(3):hover {
+    color: #666666;
+}
+
+table.sortable th:nth-of-type(5) {
+    cursor: default;
+    color: #666666;
+}
+
+table.sortable th:nth-of-type(6) {
+    cursor: default;
+    color: #666666;
+}
+
+.card-body > a {
+    text-decoration:none;
+}
+
+.cart-images {
+    max-height: 6rem;
+}

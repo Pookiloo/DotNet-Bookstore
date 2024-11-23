@@ -7,9 +7,13 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using DotNet_Bookstore.Data;
 using DotNet_Bookstore.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace DotNet_Bookstore.Controllers
 {
+    // Role Based Authorization
+    // Authorize admin - Administrator access only
+    [Authorize(Roles = "Administrator")]
     public class BooksController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -26,6 +30,8 @@ namespace DotNet_Bookstore.Controllers
             return View(await applicationDbContext.ToListAsync());
         }
 
+        // Allow anonymous users to access the Details action method.
+        [AllowAnonymous]
         // GET: Books/Details/5
         public async Task<IActionResult> Details(int? id)
         {
@@ -48,7 +54,7 @@ namespace DotNet_Bookstore.Controllers
         // GET: Books/Create
         public IActionResult Create()
         {
-            ViewData["CategoryId"] = new SelectList(_context.Categories, "CategoryId", "Name");
+            ViewData["CategoryId"] = new SelectList(_context.Categories.OrderBy(c => c.Name), "CategoryId", "Name");
             return View();
         }
 
@@ -57,8 +63,17 @@ namespace DotNet_Bookstore.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("BookId,Author,Title,Image,Price,MatureContent,CategoryId")] Book book)
+        public async Task<IActionResult> Create([Bind("BookId,Author,Title,Price,MatureContent,CategoryId")] Book book,IFormFile? Image)
         {
+            if (Image !=null)
+            {
+                // upload file if there is one
+                var fileName = UploadImage(Image);
+                // attach new unique file name to the new book object
+                book.Image = fileName;
+
+
+            }
             if (ModelState.IsValid)
             {
                 _context.Add(book);
@@ -82,7 +97,7 @@ namespace DotNet_Bookstore.Controllers
             {
                 return NotFound();
             }
-            ViewData["CategoryId"] = new SelectList(_context.Categories, "CategoryId", "Name", book.CategoryId);
+            ViewData["CategoryId"] = new SelectList(_context.Categories.OrderBy(c => c.Name), "CategoryId", "Name", book.CategoryId);
             return View(book);
         }
 
@@ -91,7 +106,7 @@ namespace DotNet_Bookstore.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("BookId,Author,Title,Image,Price,MatureContent,CategoryId")] Book book)
+        public async Task<IActionResult> Edit(int id, [Bind("BookId,Author,Title,Price,MatureContent,CategoryId")] Book book, IFormFile? Image, string? CurrentImage)
         {
             if (id != book.BookId)
             {
@@ -102,6 +117,21 @@ namespace DotNet_Bookstore.Controllers
             {
                 try
                 {
+                    // upload image if there is one
+                    if (Image != null)
+                    {
+                        var fileName = UploadImage(Image);
+                        book.Image = fileName;
+                    }
+                    else
+                    {
+                        // if this book already has an image (we keep the current image)
+                        if (CurrentImage != null)
+                        {
+                            book.Image = CurrentImage;
+                        }
+
+                    }
                     _context.Update(book);
                     await _context.SaveChangesAsync();
                 }
@@ -160,5 +190,26 @@ namespace DotNet_Bookstore.Controllers
         {
             return _context.Books.Any(e => e.BookId == id);
         }
+
+
+        private static string UploadImage(IFormFile image)
+        {
+            // get temp location of uploaded file
+            var filePath = Path.GetTempFileName();
+            // use Globally Unique Identifier (GUID) class to create unique name
+            // e.g book1.jpg => 96243hsJJDs89-book1.jpg
+            var fileName = Guid.NewGuid() + "-" + image.FileName;
+            // set destination path dynamically so it runs on any system
+            var uploadPath = System.IO.Directory.GetCurrentDirectory() + "\\wwwroot\\img\\books\\" + fileName;
+            // execute the file transfer
+            using (var stream = new FileStream(uploadPath, FileMode.Create))
+            {
+                image.CopyTo(stream);
+            }
+            // return new file name
+            return fileName;
+        }
+
+        
     }
 }
