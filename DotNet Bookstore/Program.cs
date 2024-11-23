@@ -3,6 +3,15 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
+var services = builder.Services;
+var configuration = builder.Configuration;
+
+services.AddAuthentication().AddFacebook(options =>
+{
+    options.AppId = configuration["Authentication:Facebook:AppId"];
+    options.AppSecret = configuration["Authentication:Facebook:AppSecret"];
+    options.AccessDeniedPath = "/AccessDeniedPathInfo";
+});
 
 // Add services to the container.
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
